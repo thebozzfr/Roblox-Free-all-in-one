@@ -1,0 +1,286 @@
+-- PERFECTLY PATCHED STANDALONE PANEL SOURCE CODE FOR YOUR GITHUB
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local UI_State = {
+    CurrentTab = "Home",
+    IsMinimized = false,
+    ListeningForBind = nil,
+    Binds = {
+        Fly = Enum.KeyCode.F,
+        Walk = Enum.KeyCode.V,
+        NoClip = Enum.KeyCode.N,
+        InfJump = Enum.KeyCode.J
+    },
+    Settings = {
+        FlySpeed = 50,
+        WalkSpeedValue = 50,
+        FlyEnabled = false,
+        WalkEnabled = false,
+        NoClipEnabled = false,
+        InfJumpEnabled = false
+    }
+}
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local existingUI = playerGui:FindFirstChild("NativeDevelopmentUI")
+if existingUI then existingUI:Destroy() end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "NativeDevelopmentUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 320, 0, 260)
+mainFrame.Position = UDim2.new(0.5, -160, 0.35, -130)
+mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.ClipsDescendants = true
+mainFrame.Parent = screenGui
+
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 8)
+uiCorner.Parent = mainFrame
+
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Color = Color3.fromRGB(0, 170, 255)
+uiStroke.Thickness = 1.5
+uiStroke.Parent = mainFrame
+
+local titleHeader = Instance.new("Frame")
+titleHeader.Size = UDim2.new(1, 0, 0, 35)
+titleHeader.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
+titleHeader.BorderSizePixel = 0
+titleHeader.Parent = mainFrame
+
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 8)
+headerCorner.Parent = titleHeader
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(0.6, 0, 1, 0)
+titleLabel.Position = UDim2.new(0, 12, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "⚡ CONTROL PANEL //"
+titleLabel.TextColor3 = Color3.fromRGB(0, 170, 255)
+titleLabel.Font = Enum.Font.Code
+titleLabel.TextSize = 13
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = titleHeader
+
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 22, 0, 22)
+closeButton.Position = UDim2.new(1, -30, 0, 6)
+closeButton.BackgroundColor3 = Color3.fromRGB(35, 20, 25)
+closeButton.Text = "×"
+closeButton.TextColor3 = Color3.fromRGB(255, 80, 80)
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.TextSize = 14
+closeButton.Parent = titleHeader
+Instance.new("UICorner", closeButton).CornerRadius = UDim.new(0, 4)
+
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
+
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Size = UDim2.new(0, 22, 0, 22)
+minimizeButton.Position = UDim2.new(1, -58, 0, 6)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(20, 25, 35)
+minimizeButton.Text = "−"
+minimizeButton.TextColor3 = Color3.fromRGB(0, 170, 255)
+minimizeButton.Font = Enum.Font.SourceSansBold
+minimizeButton.TextSize = 14
+minimizeButton.Parent = titleHeader
+Instance.new("UICorner", minimizeButton).CornerRadius = UDim.new(0, 4)
+
+minimizeButton.MouseButton1Click:Connect(function()
+    UI_State.IsMinimized = not UI_State.IsMinimized
+    minimizeButton.Text = UI_State.IsMinimized and "+" or "−"
+    local targetSize = UI_State.IsMinimized and UDim2.new(0, 320, 0, 35) or UDim2.new(0, 320, 0, 260)
+    TweenService:Create(mainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {Size = targetSize}):Play()
+end)
+
+local dragging, dragInput, dragStart, startPos
+titleHeader.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+
+titleHeader.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if dragging and dragInput then
+        local delta = dragInput.Position - dragStart
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+local sideBar = Instance.new("Frame")
+sideBar.Size = UDim2.new(0, 50, 1, -35)
+sideBar.Position = UDim2.new(0, 0, 0, 35)
+sideBar.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
+sideBar.BorderSizePixel = 0
+sideBar.Parent = mainFrame
+
+local containerFrame = Instance.new("Frame")
+containerFrame.Size = UDim2.new(1, -60, 1, -45)
+containerFrame.Position = UDim2.new(0, 55, 0, 40)
+containerFrame.BackgroundTransparency = 1
+containerFrame.Parent = mainFrame
+
+local pages = {}
+local function registerPage(pageName)
+    local scrollingFrame = Instance.new("ScrollingFrame")
+    scrollingFrame.Size = UDim2.new(1, 0, 1, 0)
+    scrollingFrame.BackgroundTransparency = 1
+    scrollingFrame.Visible = false
+    scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 300)
+    scrollingFrame.ScrollBarThickness = 2
+    scrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 170, 255)
+    scrollingFrame.Parent = containerFrame
+    
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, 6)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = scrollingFrame
+    
+    pages[pageName] = scrollingFrame
+    return scrollingFrame
+end
+
+local homePage = registerPage("Home")
+local playerPage = registerPage("Player")
+local settingsPage = registerPage("Settings")
+
+local function renderTabs(activeName)
+    for name, instance in pairs(pages) do
+        instance.Visible = (name == activeName)
+    end
+end
+
+local tabIndex = 0
+local function buildNavigationTab(glyph, targetPage)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 36, 0, 36)
+    btn.Position = UDim2.new(0, 7, 0, 10 + (tabIndex * 42))
+    btn.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
+    btn.Text = glyph
+    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 18
+    btn.Parent = sideBar
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    
+    btn.MouseButton1Click:Connect(function()
+        renderTabs(targetPage)
+    end)
+    tabIndex = tabIndex + 1
+end
+
+buildNavigationTab("🏠", "Home")
+buildNavigationTab("👤", "Player")
+buildNavigationTab("⚙️", "Settings")
+
+renderTabs("Home")
+
+local welcomeText = Instance.new("TextLabel")
+welcomeText.Size = UDim2.new(1, -10, 0, 60)
+welcomeText.BackgroundTransparency = 1
+welcomeText.Text = "Welcome to your control panel. Use the sidebar tabs to switch categories and toggle systems."
+welcomeText.TextColor3 = Color3.fromRGB(160, 160, 170)
+welcomeText.Font = Enum.Font.SourceSans
+welcomeText.TextSize = 14
+welcomeText.TextWrapped = true
+welcomeText.TextXAlignment = Enum.TextXAlignment.Left
+welcomeText.Parent = homePage
+
+local bodyGyro, bodyVelocity
+RunService.RenderStepped:Connect(function()
+    local char = player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    
+    if not root or not hum then return end
+    
+    if UI_State.Settings.WalkEnabled then
+        hum.WalkSpeed = UI_State.Settings.WalkSpeedValue
+    else
+        hum.WalkSpeed = 16
+    end
+    
+    if UI_State.Settings.NoClipEnabled then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
+        end
+    end
+    
+    if UI_State.Settings.FlyEnabled then
+        if not bodyGyro or bodyGyro.Parent ~= root then
+            bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.P = 9e4
+            bodyGyro.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+            bodyGyro.cframe = root.CFrame
+            bodyGyro.Parent = root
+        end
+        if not bodyVelocity or bodyVelocity.Parent ~= root then
+            bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.velocity = Vector3.new(0, 0.1, 0)
+            bodyVelocity.maxForce = Vector3.new(9e9, 9e9, 9e9)
+            bodyVelocity.Parent = root
+        end
+        
+        bodyGyro.cframe = workspace.CurrentCamera.CFrame
+        local moveDir = hum.MoveDirection
+        local flyVel = Vector3.new(0, 0.1, 0)
+        
+        if moveDir.Magnitude > 0 then
+            flyVel = moveDir * UI_State.Settings.FlySpeed
+        end
+        
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            flyVel = flyVel + Vector3.new(0, UI_State.Settings.FlySpeed, 0)
+        elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+            flyVel = flyVel - Vector3.new(0, UI_State.Settings.FlySpeed, 0)
+        end
+        bodyVelocity.velocity = flyVel
+    else
+        if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
+        if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
+    end
+end)
+
+UserInputService.JumpRequest:Connect(function()
+    if UI_State.Settings.InfJumpEnabled then
+        local char = player.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end)
+
+local function createInteractiveToggle(parent, title, keyRef)
+    local toggleBtn = Instance.new("TextButton")
+    toggleBtn.Size = UDim2.new(1, -10, 0, 32)
+    toggleBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
+    toggleBtn.Text = title .. " [OFF]"
+    toggleBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+    toggleBtn.Font = Enum.Font.SourceSansBold
+    toggleBtn.TextSize = 13
