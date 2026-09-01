@@ -1,9 +1,10 @@
--- PERFECTLY PATCHED STANDALONE PANEL SOURCE CODE FOR YOUR GITHUB
+-- Services
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
+-- System State Configuration
 local UI_State = {
     CurrentTab = "Home",
     IsMinimized = false,
@@ -24,12 +25,15 @@ local UI_State = {
     }
 }
 
+-- References
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
+-- Cleanup Existing Test Frameworks to Prevent Overlaps
 local existingUI = playerGui:FindFirstChild("NativeDevelopmentUI")
 if existingUI then existingUI:Destroy() end
 
+-- 1. Core Visual Infrastructure
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "NativeDevelopmentUI"
 screenGui.ResetOnSpawn = false
@@ -53,6 +57,7 @@ uiStroke.Color = Color3.fromRGB(0, 170, 255)
 uiStroke.Thickness = 1.5
 uiStroke.Parent = mainFrame
 
+-- 2. Draggable Title Header Panel
 local titleHeader = Instance.new("Frame")
 titleHeader.Size = UDim2.new(1, 0, 0, 35)
 titleHeader.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
@@ -74,6 +79,7 @@ titleLabel.TextSize = 13
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Parent = titleHeader
 
+-- Window Control Actions (Close / Minimize)
 local closeButton = Instance.new("TextButton")
 closeButton.Size = UDim2.new(0, 22, 0, 22)
 closeButton.Position = UDim2.new(1, -30, 0, 6)
@@ -107,12 +113,14 @@ minimizeButton.MouseButton1Click:Connect(function()
     TweenService:Create(mainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {Size = targetSize}):Play()
 end)
 
+-- Structural Drag Engine Interaction
 local dragging, dragInput, dragStart, startPos
 titleHeader.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
         startPos = mainFrame.Position
+        
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then dragging = false end
         end)
@@ -130,6 +138,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+-- 3. Side Navigation and Page Container Elements
 local sideBar = Instance.new("Frame")
 sideBar.Size = UDim2.new(0, 50, 1, -35)
 sideBar.Position = UDim2.new(0, 0, 0, 35)
@@ -198,6 +207,7 @@ buildNavigationTab("⚙️", "Settings")
 
 renderTabs("Home")
 
+-- 4. Content Elements Layering
 local welcomeText = Instance.new("TextLabel")
 welcomeText.Size = UDim2.new(1, -10, 0, 60)
 welcomeText.BackgroundTransparency = 1
@@ -209,6 +219,7 @@ welcomeText.TextWrapped = true
 welcomeText.TextXAlignment = Enum.TextXAlignment.Left
 welcomeText.Parent = homePage
 
+-- Fly / Movement Engines
 local bodyGyro, bodyVelocity
 RunService.RenderStepped:Connect(function()
     local char = player.Character
@@ -217,12 +228,14 @@ RunService.RenderStepped:Connect(function()
     
     if not root or not hum then return end
     
+    -- Speed Matrix
     if UI_State.Settings.WalkEnabled then
         hum.WalkSpeed = UI_State.Settings.WalkSpeedValue
     else
         hum.WalkSpeed = 16
     end
     
+    -- NoClip Engine
     if UI_State.Settings.NoClipEnabled then
         for _, part in pairs(char:GetDescendants()) do
             if part:IsA("BasePart") and part.CanCollide then
@@ -231,6 +244,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
     
+    -- Fly Engine
     if UI_State.Settings.FlyEnabled then
         if not bodyGyro or bodyGyro.Parent ~= root then
             bodyGyro = Instance.new("BodyGyro")
@@ -266,6 +280,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+-- Infinite Jump Hook
 UserInputService.JumpRequest:Connect(function()
     if UI_State.Settings.InfJumpEnabled then
         local char = player.Character
@@ -276,11 +291,4 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
-local function createInteractiveToggle(parent, title, keyRef)
-    local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Size = UDim2.new(1, -10, 0, 32)
-    toggleBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
-    toggleBtn.Text = title .. " [OFF]"
-    toggleBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    toggleBtn.Font = Enum.Font.SourceSansBold
-    toggleBtn.TextSize = 13
+-- Dynamic UI Components Matrix (The fixed portion of your pasted text)local function createInteractiveToggle(parent, title, keyRef)local toggleBtn = Instance.new("TextButton")toggleBtn.Size = UDim2.new(1, -10, 0, 32)toggleBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 36)toggleBtn.Text = title .. " [OFF]"toggleBtn.TextColor3 = Color3.fromRGB(150, 150, 150)toggleBtn.Font = Enum.Font.SourceSansBoldtoggleBtn.TextSize = 13toggleBtn.Parent = parentInstance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 4)local function updateVisuals()local enabled = UI_State.Settings[keyRef .. "Enabled"]toggleBtn.Text = title .. (enabled and " [ON]" or " [OFF]")toggleBtn.TextColor3 = enabled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(150, 150, 150)endtoggleBtn.MouseButton1Click:Connect(function()UI_State.Settings[keyRef .. "Enabled"] = not UI_State.Settings[keyRef .. "Enabled"]updateVisuals()end)toggleBtn.Name = keyRef .. "Toggle"updateVisuals()return toggleBtnendlocal function createBindConfigurator(parent, title, keyRef)local bindFrame = Instance.new("Frame")bindFrame.Size = UDim2.new(1, -10, 0, 32)bindFrame.BackgroundTransparency = 1bindFrame.Parent = parentlocal lbl = Instance.new("TextLabel")lbl.Size = UDim2.new(0.6, 0, 1, 0)lbl.BackgroundTransparency = 1lbl.Text = titlelbl.TextColor3 = Color3.fromRGB(200, 200, 200)lbl.Font = Enum.Font.SourceSanslbl.TextSize = 14lbl.TextXAlignment = Enum.TextXAlignment.Leftlbl.Parent = bindFramelocal bindBtn = Instance.new("TextButton")bindBtn.Size = UDim2.new(0.4, 0, 1, 0)bindBtn.Position = UDim2.new(0.6, 0, 0, 0)bindBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 36)bindBtn.Text = UI_State.Binds[keyRef].NamebindBtn.TextColor3 = Color3.fromRGB(0, 170, 255)bindBtn.Font = Enum.Font.CodebindBtn.TextSize = 12bindBtn.Parent = bindFrameInstance.new("UICorner", bindBtn).CornerRadius = UDim.new(0, 4)bindBtn.MouseButton1Click:Connect(function()UI_State.ListeningForBind = keyRefbindBtn.Text = "..."end)UserInputService.InputBegan:Connect(function(input, processed)if processed then return endif UI_State.ListeningForBind == keyRef and input.UserInputType == Enum.UserInputType.Keyboard thenUI_State.Binds[keyRef] = input.KeyCodebindBtn.Text = input.KeyCode.NameUI_State.ListeningForBind = nilendend)end-- Keypress Listening MonitorUserInputService.InputBegan:Connect(function(input, processed)if processed or UI_State.ListeningForBind then return endif input.UserInputType == Enum.UserInputType.Keyboard thenfor action, keyCode in pairs(UI_State.Binds) doif input.KeyCode == keyCode thenUI_State.Settings[action .. "Enabled"] = not UI_State.Settings[action .. "Enabled"]local toggleUi = playerPage:FindFirstChild(action .. "Toggle")if toggleUi thenlocal enabled = UI_State.Settings[action .. "Enabled"]toggleUi.Text = action .. (enabled and " [ON]" or " [OFF]")toggleUi.TextColor3 = enabled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(150, 150, 150)endendendendend)-- Deploy Layout ComponentscreateInteractiveToggle(playerPage, "Fly Engine Mode", "Fly")createInteractiveToggle(playerPage, "Speed Modifier matrix", "Walk")createInteractiveToggle(playerPage, "No Clip Phase System", "NoClip")createInteractiveToggle(playerPage, "Infinite Jump Protocol", "InfJump")createBindConfigurator(settingsPage, "Fly Keybind", "Fly")createBindConfigurator(settingsPage, "Speed Keybind", "Walk")createBindConfigurator(settingsPage, "NoClip Keybind", "NoClip")createBindConfigurator(settingsPage, "InfJump Keybind", "InfJump")
