@@ -10,10 +10,10 @@ local UI_State = {
     IsMinimized = false,
     ListeningForBind = nil,
     Binds = {
-        Fly = Enum.KeyCode.F,
-        Walk = Enum.KeyCode.V,
-        NoClip = Enum.KeyCode.N,
-        InfJump = Enum.KeyCode.J
+        Fly = nil,      -- Set to nil so they are unconnected at first
+        Walk = nil,     -- Set to nil so they are unconnected at first
+        NoClip = nil,   -- Set to nil so they are unconnected at first
+        InfJump = nil   -- Set to nil so they are unconnected at first
     },
     Settings = {
         FlySpeed = 50,
@@ -72,7 +72,7 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(0.6, 0, 1, 0)
 titleLabel.Position = UDim2.new(0, 12, 0, 0)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "⚡ CONTROL PANEL //"
+titleLabel.Text = "⚡ thebozz_V1.1 //" -- Updated Rebranded Name
 titleLabel.TextColor3 = Color3.fromRGB(0, 170, 255)
 titleLabel.Font = Enum.Font.Code
 titleLabel.TextSize = 13
@@ -120,7 +120,6 @@ titleHeader.InputBegan:Connect(function(input)
         dragging = true
         dragStart = input.Position
         startPos = mainFrame.Position
-        
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then dragging = false end
         end)
@@ -207,7 +206,6 @@ buildNavigationTab("⚙️", "Settings")
 
 renderTabs("Home")
 
--- 4. Content Elements Layering
 local welcomeText = Instance.new("TextLabel")
 welcomeText.Size = UDim2.new(1, -10, 0, 60)
 welcomeText.BackgroundTransparency = 1
@@ -219,7 +217,7 @@ welcomeText.TextWrapped = true
 welcomeText.TextXAlignment = Enum.TextXAlignment.Left
 welcomeText.Parent = homePage
 
--- Fly / Movement Engines
+-- Fly / Movement Runtime Engines (Fully Upgraded 3D Flight Tracker)
 local bodyGyro, bodyVelocity
 RunService.RenderStepped:Connect(function()
     local char = player.Character
@@ -228,14 +226,12 @@ RunService.RenderStepped:Connect(function()
     
     if not root or not hum then return end
     
-    -- Speed Matrix
     if UI_State.Settings.WalkEnabled then
         hum.WalkSpeed = UI_State.Settings.WalkSpeedValue
     else
         hum.WalkSpeed = 16
     end
     
-    -- NoClip Engine
     if UI_State.Settings.NoClipEnabled then
         for _, part in pairs(char:GetDescendants()) do
             if part:IsA("BasePart") and part.CanCollide then
@@ -244,7 +240,6 @@ RunService.RenderStepped:Connect(function()
         end
     end
     
-    -- Fly Engine
     if UI_State.Settings.FlyEnabled then
         if not bodyGyro or bodyGyro.Parent ~= root then
             bodyGyro = Instance.new("BodyGyro")
@@ -261,11 +256,12 @@ RunService.RenderStepped:Connect(function()
         end
         
         bodyGyro.cframe = workspace.CurrentCamera.CFrame
-        local moveDir = hum.MoveDirection
+        local cameraLook = workspace.CurrentCamera.CFrame.LookVector
         local flyVel = Vector3.new(0, 0.1, 0)
         
-        if moveDir.Magnitude > 0 then
-            flyVel = moveDir * UI_State.Settings.FlySpeed
+        -- Tracks movement in exact 3D camera vector space (Look up to fly up, down to fly down)
+        if hum.MoveDirection.Magnitude > 0 then
+            flyVel = cameraLook * UI_State.Settings.FlySpeed
         end
         
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
@@ -280,15 +276,5 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Infinite Jump Hook
 UserInputService.JumpRequest:Connect(function()
-    if UI_State.Settings.InfJumpEnabled then
-        local char = player.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if hum then
-            hum:ChangeState(Enum.HumanoidStateType.Jumping)
-        end
-    end
-end)
-
--- Dynamic UI Components Matrix (The fixed portion of your pasted text)local function createInteractiveToggle(parent, title, keyRef)local toggleBtn = Instance.new("TextButton")toggleBtn.Size = UDim2.new(1, -10, 0, 32)toggleBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 36)toggleBtn.Text = title .. " [OFF]"toggleBtn.TextColor3 = Color3.fromRGB(150, 150, 150)toggleBtn.Font = Enum.Font.SourceSansBoldtoggleBtn.TextSize = 13toggleBtn.Parent = parentInstance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 4)local function updateVisuals()local enabled = UI_State.Settings[keyRef .. "Enabled"]toggleBtn.Text = title .. (enabled and " [ON]" or " [OFF]")toggleBtn.TextColor3 = enabled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(150, 150, 150)endtoggleBtn.MouseButton1Click:Connect(function()UI_State.Settings[keyRef .. "Enabled"] = not UI_State.Settings[keyRef .. "Enabled"]updateVisuals()end)toggleBtn.Name = keyRef .. "Toggle"updateVisuals()return toggleBtnendlocal function createBindConfigurator(parent, title, keyRef)local bindFrame = Instance.new("Frame")bindFrame.Size = UDim2.new(1, -10, 0, 32)bindFrame.BackgroundTransparency = 1bindFrame.Parent = parentlocal lbl = Instance.new("TextLabel")lbl.Size = UDim2.new(0.6, 0, 1, 0)lbl.BackgroundTransparency = 1lbl.Text = titlelbl.TextColor3 = Color3.fromRGB(200, 200, 200)lbl.Font = Enum.Font.SourceSanslbl.TextSize = 14lbl.TextXAlignment = Enum.TextXAlignment.Leftlbl.Parent = bindFramelocal bindBtn = Instance.new("TextButton")bindBtn.Size = UDim2.new(0.4, 0, 1, 0)bindBtn.Position = UDim2.new(0.6, 0, 0, 0)bindBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 36)bindBtn.Text = UI_State.Binds[keyRef].NamebindBtn.TextColor3 = Color3.fromRGB(0, 170, 255)bindBtn.Font = Enum.Font.CodebindBtn.TextSize = 12bindBtn.Parent = bindFrameInstance.new("UICorner", bindBtn).CornerRadius = UDim.new(0, 4)bindBtn.MouseButton1Click:Connect(function()UI_State.ListeningForBind = keyRefbindBtn.Text = "..."end)UserInputService.InputBegan:Connect(function(input, processed)if processed then return endif UI_State.ListeningForBind == keyRef and input.UserInputType == Enum.UserInputType.Keyboard thenUI_State.Binds[keyRef] = input.KeyCodebindBtn.Text = input.KeyCode.NameUI_State.ListeningForBind = nilendend)end-- Keypress Listening MonitorUserInputService.InputBegan:Connect(function(input, processed)if processed or UI_State.ListeningForBind then return endif input.UserInputType == Enum.UserInputType.Keyboard thenfor action, keyCode in pairs(UI_State.Binds) doif input.KeyCode == keyCode thenUI_State.Settings[action .. "Enabled"] = not UI_State.Settings[action .. "Enabled"]local toggleUi = playerPage:FindFirstChild(action .. "Toggle")if toggleUi thenlocal enabled = UI_State.Settings[action .. "Enabled"]toggleUi.Text = action .. (enabled and " [ON]" or " [OFF]")toggleUi.TextColor3 = enabled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(150, 150, 150)endendendendend)-- Deploy Layout ComponentscreateInteractiveToggle(playerPage, "Fly Engine Mode", "Fly")createInteractiveToggle(playerPage, "Speed Modifier matrix", "Walk")createInteractiveToggle(playerPage, "No Clip Phase System", "NoClip")createInteractiveToggle(playerPage, "Infinite Jump Protocol", "InfJump")createBindConfigurator(settingsPage, "Fly Keybind", "Fly")createBindConfigurator(settingsPage, "Speed Keybind", "Walk")createBindConfigurator(settingsPage, "NoClip Keybind", "NoClip")createBindConfigurator(settingsPage, "InfJump Keybind", "InfJump")
+if UI_State.Settings.InfJumpEnabled thenlocal char = player.Characterlocal hum = char and char:FindFirstChildOfClass("Humanoid")if hum thenhum:ChangeState(Enum.HumanoidStateType.Jumping)endendend)-- Custom UI Component Builder Matrix (Added Custom Typing Speed Fields)local function createInteractiveToggle(parent, title, keyRef)local toggleBtn = Instance.new("TextButton")toggleBtn.Size = UDim2.new(1, -10, 0, 32)toggleBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 36)toggleBtn.Text = title .. " [OFF]"toggleBtn.TextColor3 = Color3.fromRGB(150, 150, 150)toggleBtn.Font = Enum.Font.SourceSansBoldtoggleBtn.TextSize = 13toggleBtn.Parent = parentInstance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 4)local function updateVisuals()local enabled = UI_State.Settings[keyRef .. "Enabled"]toggleBtn.Text = title .. (enabled and " [ON]" or " [OFF]")toggleBtn.TextColor3 = enabled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(150, 150, 150)endtoggleBtn.MouseButton1Click:Connect(function()UI_State.Settings[keyRef .. "Enabled"] = not UI_State.Settings[keyRef .. "Enabled"]updateVisuals()end)toggleBtn.Name = keyRef .. "Toggle"updateVisuals()return toggleBtnendlocal function createSpeedInputField(parent, title, settingKey)local frame = Instance.new("Frame")frame.Size = UDim2.new(1, -10, 0, 32)frame.BackgroundTransparency = 1frame.Parent = parentlocal lbl = Instance.new("TextLabel")lbl.Size = UDim2.new(0.6, 0, 1, 0)lbl.BackgroundTransparency = 1lbl.Text = titlelbl.TextColor3 = Color3.fromRGB(200, 200, 200)lbl.Font = Enum.Font.SourceSanslbl.TextSize = 14lbl.TextXAlignment = Enum.TextXAlignment.Leftlbl.Parent = framelocal box = Instance.new("TextBox")box.Size = UDim2.new(0.35, 0, 1, 0)box.Position = UDim2.new(0.65, 0, 0, 0)box.BackgroundColor3 = Color3.fromRGB(28, 28, 36)box.Text = tostring(UI_State.Settings[settingKey])box.TextColor3 = Color3.fromRGB(0, 170, 255)box.Font = Enum.Font.Codebox.TextSize = 13box.Parent = frameInstance.new("UICorner", box).CornerRadius = UDim.new(0, 4)box.FocusLost:Connect(function()local num = tonumber(box.Text)if num thenUI_State.Settings[settingKey] = numelsebox.Text = tostring(UI_State.Settings[settingKey])endend)endlocal function createBindConfigurator(parent, title, keyRef)local bindFrame = Instance.new("Frame")bindFrame.Size = UDim2.new(1, -10, 0, 32)bindFrame.BackgroundTransparency = 1bindFrame.Parent = parentlocal lbl = Instance.new("TextLabel")lbl.Size = UDim2.new(0.6, 0, 1, 0)lbl.BackgroundTransparency = 1lbl.Text = titlelbl.TextColor3 = Color3.fromRGB(200, 200, 200)lbl.Font = Enum.Font.SourceSanslbl.TextSize = 14lbl.TextXAlignment = Enum.TextXAlignment.Leftlbl.Parent = bindFramelocal bindBtn = Instance.new("TextButton")bindBtn.Size = UDim2.new(0.4, 0, 1, 0)bindBtn.Position = UDim2.new(0.6, 0, 0, 0)bindBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 36)bindBtn.Text = UI_State.Binds[keyRef] and UI_State.Binds[keyRef].Name or "None" -- Starts empty/NonebindBtn.TextColor3 = Color3.fromRGB(0, 170, 255)bindBtn.Font = Enum.Font.CodebindBtn.TextSize = 12bindBtn.Parent = bindFrameInstance.new("UICorner", bindBtn).CornerRadius = UDim.new(0, 4)bindBtn.MouseButton1Click:Connect(function()UI_State.ListeningForBind = keyRefbindBtn.Text = "..."end)UserInputService.InputBegan:Connect(function(input, processed)if processed then return endif UI_State.ListeningForBind == keyRef and input.UserInputType == Enum.UserInputType.Keyboard thenUI_State.Binds[keyRef] = input.KeyCodebindBtn.Text = input.KeyCode.NameUI_State.ListeningForBind = nilendend)end-- Keypress Listening MonitorUserInputService.InputBegan:Connect(function(input, processed)if processed or UI_State.ListeningForBind then return endif input.UserInputType == Enum.UserInputType.Keyboard thenfor action, keyCode in pairs(UI_State.Binds) doif keyCode and input.KeyCode == keyCode thenUI_State.Settings[action .. "Enabled"] = not UI_State.Settings[action .. "Enabled"]local toggleUi = playerPage:FindFirstChild(action .. "Toggle")if toggleUi thenlocal enabled = UI_State.Settings[action .. "Enabled"]toggleUi.Text = action .. (enabled and " [ON]" or " [OFF]")toggleUi.TextColor3 = enabled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(150, 150, 150)endendendendend)-- Deploy Panel Components MatrixcreateInteractiveToggle(playerPage, "Fly Engine Mode", "Fly")createSpeedInputField(playerPage, "Set Flight Value:", "FlySpeed")createInteractiveToggle(playerPage, "Speed Modifier matrix", "Walk")createSpeedInputField(playerPage, "Set Speed Value:", "WalkSpeedValue")createInteractiveToggle(playerPage, "No Clip Phase System", "NoClip")createInteractiveToggle(playerPage, "Infinite Jump Protocol", "InfJump")createBindConfigurator(settingsPage, "Fly Keybind", "Fly")createBindConfigurator(settingsPage, "Speed Keybind", "Walk")createBindConfigurator(settingsPage, "NoClip Keybind", "NoClip")createBindConfigurator(settingsPage, "InfJump Keybind", "InfJump")
