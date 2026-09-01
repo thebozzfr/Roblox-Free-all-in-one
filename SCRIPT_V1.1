@@ -17,7 +17,7 @@ local UI_State = {
     },
     Settings = {
         FlySpeed = 50,
-        WalkSpeedValue = 16,
+        WalkSpeedValue = 50, -- Increased default to be noticeable
         FlyEnabled = false,
         WalkEnabled = false,
         NoClipEnabled = false,
@@ -72,7 +72,7 @@ local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(0.6, 0, 1, 0)
 titleLabel.Position = UDim2.new(0, 12, 0, 0)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "⚡ CONTROL PANEL PANEL //"
+titleLabel.Text = "⚡ CONTROL PANEL //"
 titleLabel.TextColor3 = Color3.fromRGB(0, 170, 255)
 titleLabel.Font = Enum.Font.Code
 titleLabel.TextSize = 13
@@ -184,7 +184,7 @@ local function renderTabs(activeName)
 end
 
 local tabIndex = 0
-local function buildNavigationTab(glyph, descriptor, targetPage)
+local function buildNavigationTab(glyph, targetPage)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 36, 0, 36)
     btn.Position = UDim2.new(0, 7, 0, 10 + (tabIndex * 42))
@@ -192,7 +192,7 @@ local function buildNavigationTab(glyph, descriptor, targetPage)
     btn.Text = glyph
     btn.TextColor3 = Color3.fromRGB(200, 200, 200)
     btn.Font = Enum.Font.SourceSansBold
-    btn.TextSize = 14
+    btn.TextSize = 18
     btn.Parent = sideBar
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     
@@ -202,16 +202,19 @@ local function buildNavigationTab(glyph, descriptor, targetPage)
     tabIndex = tabIndex + 1
 end
 
-buildNavigationTab("🏠", "Home Tab", "Home")
-buildNavigationTab("👤", "Player Controls", "Player")
-buildNavigationTab("⚙️", "Settings Configuration", "Settings")
+buildNavigationTab("🏠", "Home")
+buildNavigationTab("👤", "Player")
+buildNavigationTab("⚙️", "Settings")
+
+-- Render default tab
+renderTabs("Home")
 
 -- 4. Content Elements Layering
 -- [Home Page Components]
 local welcomeText = Instance.new("TextLabel")
 welcomeText.Size = UDim2.new(1, -10, 0, 60)
 welcomeText.BackgroundTransparency = 1
-welcomeText.Text = "Welcome to the layout demonstration. Use the sidebar tabs to navigate the property configuration matrices."
+welcomeText.Text = "Welcome to the control panel. Use the sidebar tabs to switch categories and toggle systems."
 welcomeText.TextColor3 = Color3.fromRGB(160, 160, 170)
 welcomeText.Font = Enum.Font.SourceSans
 welcomeText.TextSize = 14
@@ -219,59 +222,70 @@ welcomeText.TextWrapped = true
 welcomeText.TextXAlignment = Enum.TextXAlignment.Left
 welcomeText.Parent = homePage
 
--- Helper Builders for System Toggles and Modifiers
-local function createInteractiveToggle(parent, title, keyRef)
-    local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Size = UDim2.new(1, -10, 0, 30)
-    toggleBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
-    toggleBtn.Text = title .. ": CLOSED"
-    toggleBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    toggleBtn.Font = Enum.Font.SourceSansBold
-    toggleBtn.TextSize = 13
-    toggleBtn.Parent = parent
-    Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 4)
-    
-    toggleBtn.MouseButton1Click:Connect(function()
-        UI_State.Settings[keyRef] = not UI_State.Settings[keyRef]
-        local active = UI_State.Settings[keyRef]
-        
-        toggleBtn.BackgroundColor3 = active and Color3.fromRGB(0, 60, 90) or Color3.fromRGB(28, 28, 36)
-        toggleBtn.TextColor3 = active and Color3.fromRGB(0, 200, 255) or Color3.fromRGB(150, 150, 150)
-        toggleBtn.Text = title .. (active and ": ACTIVE" or ": CLOSED")
-    end)
+-- Functional Framework Loops
+local function getCharacter()
+    return player.Character or player.CharacterAdded:Wait()
 end
 
-local function createNumericInputBox(parent, clearLabel, targetKey)
-    local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, -10, 0, 30)
-    container.BackgroundTransparency = 1
-    container.Parent = parent
+-- Fly Core Engine Variables
+local bodyGyro, bodyVelocity
+RunService.RenderStepped:Connect(function()
+    local char = player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local root = char and char:FindFirstChild("HumanoidRootPart")
     
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(0.5, 0, 1, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = clearLabel
-    textLabel.TextColor3 = Color3.fromRGB(140, 140, 150)
-    textLabel.Font = Enum.Font.SourceSans
-    textLabel.TextSize = 13
-    textLabel.TextXAlignment = Enum.TextXAlignment.Left
-    textLabel.Parent = container
+    if not root or not hum then return end
     
-    local inputBox = Instance.new("TextBox")
-    inputBox.Size = UDim2.new(0.5, 0, 1, 0)
-    inputBox.Position = UDim2.new(0.5, 0, 0, 0)
-    inputBox.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
-    inputBox.Text = tostring(UI_State.Settings[targetKey])
-    inputBox.TextColor3 = Color3.fromRGB(0, 170, 255)
-    inputBox.Font = Enum.Font.SourceSansBold
-    inputBox.TextSize = 13
-    inputBox.Parent = container
-    Instance.new("UICorner", inputBox).CornerRadius = UDim.new(0, 4)
+    -- WalkSpeed Engine
+    if UI_State.Settings.WalkEnabled then
+        hum.WalkSpeed = UI_State.Settings.WalkSpeedValue
+    else
+        hum.WalkSpeed = 16
+    end
     
-    inputBox.FocusLost:Connect(function()
-        local convertedNum = tonumber(inputBox.Text)
-        if convertedNum then
-            UI_State.Settings[targetKey] = convertedNum
-        else
-            inputBox.Text = tostring(UI_State.Settings[targetKey])
+    -- NoClip Engine
+    if UI_State.Settings.NoClipEnabled then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
         end
+    end
+    
+    -- Fly Engine
+    if UI_State.Settings.FlyEnabled then
+        if not bodyGyro or bodyGyro.Parent ~= root then
+            bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.P = 9e4
+            bodyGyro.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+            bodyGyro.cframe = root.CFrame
+            bodyGyro.Parent = root
+        end
+        if not bodyVelocity or bodyVelocity.Parent ~= root then
+            bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.velocity = Vector3.new(0, 0.1, 0)
+            bodyVelocity.maxForce = Vector3.new(9e9, 9e9, 9e9)
+            bodyVelocity.Parent = root
+        end
+        
+        bodyGyro.cframe = workspace.CurrentCamera.CFrame
+        local moveDir = hum.MoveDirection
+        local flyVel = Vector3.new(0, 0.1, 0)
+        
+        if moveDir.Magnitude > 0 then
+            flyVel = moveDir * UI_State.Settings.FlySpeed
+        end
+        
+        -- Vertical Fly Controls (Space/Shift fallback via basic camera vector tracking)
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            flyVel = flyVel + Vector3.new(0, UI_State.Settings.FlySpeed, 0)
+        elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+            flyVel = flyVel - Vector3.new(0, UI_State.Settings.FlySpeed, 0)
+        end
+        bodyVelocity.velocity = flyVel
+    else
+        if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
+        if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
+    end
+end)
+
