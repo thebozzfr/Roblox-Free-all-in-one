@@ -17,7 +17,7 @@ local UI_State = {
     },
     Settings = {
         FlySpeed = 50,
-        WalkSpeedValue = 50, -- Increased default to be noticeable
+        WalkSpeedValue = 50,
         FlyEnabled = false,
         WalkEnabled = false,
         NoClipEnabled = false,
@@ -206,15 +206,13 @@ buildNavigationTab("🏠", "Home")
 buildNavigationTab("👤", "Player")
 buildNavigationTab("⚙️", "Settings")
 
--- Render default tab
 renderTabs("Home")
 
 -- 4. Content Elements Layering
--- [Home Page Components]
 local welcomeText = Instance.new("TextLabel")
 welcomeText.Size = UDim2.new(1, -10, 0, 60)
 welcomeText.BackgroundTransparency = 1
-welcomeText.Text = "Welcome to the control panel. Use the sidebar tabs to switch categories and toggle systems."
+welcomeText.Text = "Welcome to your control panel. Use the sidebar tabs to switch categories and toggle systems."
 welcomeText.TextColor3 = Color3.fromRGB(160, 160, 170)
 welcomeText.Font = Enum.Font.SourceSans
 welcomeText.TextSize = 14
@@ -222,12 +220,7 @@ welcomeText.TextWrapped = true
 welcomeText.TextXAlignment = Enum.TextXAlignment.Left
 welcomeText.Parent = homePage
 
--- Functional Framework Loops
-local function getCharacter()
-    return player.Character or player.CharacterAdded:Wait()
-end
-
--- Fly Core Engine Variables
+-- Fly / Movement Engines
 local bodyGyro, bodyVelocity
 RunService.RenderStepped:Connect(function()
     local char = player.Character
@@ -236,7 +229,7 @@ RunService.RenderStepped:Connect(function()
     
     if not root or not hum then return end
     
-    -- WalkSpeed Engine
+    -- WalkSpeed Matrix
     if UI_State.Settings.WalkEnabled then
         hum.WalkSpeed = UI_State.Settings.WalkSpeedValue
     else
@@ -252,7 +245,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
     
-    -- Fly Engine
+    -- Fly Engine Setup
     if UI_State.Settings.FlyEnabled then
         if not bodyGyro or bodyGyro.Parent ~= root then
             bodyGyro = Instance.new("BodyGyro")
@@ -276,7 +269,6 @@ RunService.RenderStepped:Connect(function()
             flyVel = moveDir * UI_State.Settings.FlySpeed
         end
         
-        -- Vertical Fly Controls (Space/Shift fallback via basic camera vector tracking)
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
             flyVel = flyVel + Vector3.new(0, UI_State.Settings.FlySpeed, 0)
         elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
@@ -289,3 +281,12 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+-- Infinite Jump Hook
+UserInputService.JumpRequest:Connect(function()
+    if UI_State.Settings.InfJumpEnabled then
+        local char = player.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
