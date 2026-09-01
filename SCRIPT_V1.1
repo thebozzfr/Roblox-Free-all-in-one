@@ -4,6 +4,7 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
+-- System State Configuration
 local UI_State = {
     CurrentTab = "Home",
     IsMinimized = false,
@@ -24,12 +25,15 @@ local UI_State = {
     }
 }
 
+-- References
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
+-- Cleanup Existing Test Frameworks to Prevent Overlaps
 local existingUI = playerGui:FindFirstChild("NativeDevelopmentUI")
 if existingUI then existingUI:Destroy() end
 
+-- 1. Core Visual Infrastructure
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "NativeDevelopmentUI"
 screenGui.ResetOnSpawn = false
@@ -53,6 +57,7 @@ uiStroke.Color = Color3.fromRGB(0, 170, 255)
 uiStroke.Thickness = 1.5
 uiStroke.Parent = mainFrame
 
+-- 2. Draggable Title Header Panel
 local titleHeader = Instance.new("Frame")
 titleHeader.Size = UDim2.new(1, 0, 0, 35)
 titleHeader.BackgroundColor3 = Color3.fromRGB(24, 24, 32)
@@ -74,6 +79,7 @@ titleLabel.TextSize = 13
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Parent = titleHeader
 
+-- Window Control Actions (Close / Minimize)
 local closeButton = Instance.new("TextButton")
 closeButton.Size = UDim2.new(0, 22, 0, 22)
 closeButton.Position = UDim2.new(1, -30, 0, 6)
@@ -103,16 +109,19 @@ Instance.new("UICorner", minimizeButton).CornerRadius = UDim.new(0, 4)
 minimizeButton.MouseButton1Click:Connect(function()
     UI_State.IsMinimized = not UI_State.IsMinimized
     minimizeButton.Text = UI_State.IsMinimized and "+" or "−"
+    
     local targetSize = UI_State.IsMinimized and UDim2.new(0, 320, 0, 35) or UDim2.new(0, 320, 0, 260)
     TweenService:Create(mainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {Size = targetSize}):Play()
 end)
 
+-- Structural Drag Engine Interaction
 local dragging, dragInput, dragStart, startPos
 titleHeader.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
         startPos = mainFrame.Position
+        
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then dragging = false end
         end)
@@ -130,6 +139,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+-- 3. Side Navigation and Page Container Elements
 local sideBar = Instance.new("Frame")
 sideBar.Size = UDim2.new(0, 50, 1, -35)
 sideBar.Position = UDim2.new(0, 0, 0, 35)
@@ -198,6 +208,7 @@ buildNavigationTab("⚙️", "Settings")
 
 renderTabs("Home")
 
+-- 4. Content Elements Layering
 local welcomeText = Instance.new("TextLabel")
 welcomeText.Size = UDim2.new(1, -10, 0, 60)
 welcomeText.BackgroundTransparency = 1
@@ -209,6 +220,7 @@ welcomeText.TextWrapped = true
 welcomeText.TextXAlignment = Enum.TextXAlignment.Left
 welcomeText.Parent = homePage
 
+-- Fly / Movement Runtime Engines
 local bodyGyro, bodyVelocity
 RunService.RenderStepped:Connect(function()
     local char = player.Character
@@ -217,12 +229,14 @@ RunService.RenderStepped:Connect(function()
     
     if not root or not hum then return end
     
+    -- Speed System
     if UI_State.Settings.WalkEnabled then
         hum.WalkSpeed = UI_State.Settings.WalkSpeedValue
     else
         hum.WalkSpeed = 16
     end
     
+    -- NoClip Engine
     if UI_State.Settings.NoClipEnabled then
         for _, part in pairs(char:GetDescendants()) do
             if part:IsA("BasePart") and part.CanCollide then
@@ -231,6 +245,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
     
+    -- Fly Core Logic
     if UI_State.Settings.FlyEnabled then
         if not bodyGyro or bodyGyro.Parent ~= root then
             bodyGyro = Instance.new("BodyGyro")
@@ -266,21 +281,9 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+-- Infinite Jump Hook
 UserInputService.JumpRequest:Connect(function()
     if UI_State.Settings.InfJumpEnabled then
         local char = player.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         if hum then
-            hum:ChangeState(Enum.HumanoidStateType.Jumping)
-        end
-    end
-end)
-
-local function createInteractiveToggle(parent, title, keyRef)
-    local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Size = UDim2.new(1, -10, 0, 32)
-    toggleBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
-    toggleBtn.Text = title .. " [OFF]"
-    toggleBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    toggleBtn.Font = Enum.Font.SourceSansBold
-    toggleBtn.TextSize = 13
