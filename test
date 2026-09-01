@@ -1,1 +1,153 @@
+-- Initialize global state safely so features don't crash
+_G.BFeat = _G.BFeat or {
+    fly = false,
+    flySpd = 50,
+    walk = false,
+    wsVal = 16,
+    noclip = false,
+    jump = false,
+    act = nil
+}
+_G.BTogs = _G.BTogs or {}
+_G.BBinds = _G.BBinds or {}
 
+local P, U, T = game:GetService("Players"), game:GetService("UserInputService"), game:GetService("TweenService")
+local p = P.LocalPlayer 
+local pG = p:FindFirstChildOfClass("PlayerGui") or p:WaitForChild("PlayerGui", 5)
+
+-- Prevent duplicate UI stacking
+for _, o in ipairs(pG:GetChildren()) do 
+    if string.match(o.Name, "^Thebozz") or string.match(o.Name, "^Solara") then 
+        o:Destroy() 
+    end 
+end
+
+-- Create Window GUI
+local sg = Instance.new("ScreenGui", pG) 
+sg.Name = "ThebozzUI" 
+sg.ResetOnSpawn = false
+
+local g = Instance.new("Frame", sg) 
+g.Size = UDim2.new(0, 300, 0, 250) 
+g.Position = UDim2.new(0.5, -150, 0.35, 0) 
+g.BackgroundColor3 = Color3.fromRGB(15, 15, 18) 
+g.BorderSizePixel = 0 
+g.Active = true 
+g.ClipsDescendants = true
+Instance.new("UICorner", g).CornerRadius = UDim.new(0, 8) 
+Instance.new("UIStroke", g).Color = Color3.fromRGB(0, 210, 255)
+
+local top = Instance.new("Frame", g) 
+top.Size = UDim2.new(1, 0, 0, 30) top.BackgroundTransparency = 1
+
+local tLabel = Instance.new("TextLabel", top) 
+tLabel.Size = UDim2.new(0.7, 0, 1, 0) tLabel.Position = UDim2.new(0, 12, 0, 0) tLabel.BackgroundTransparency = 1 
+tLabel.Text = "⚡ THEBOZZ_V1 //" tLabel.TextColor3 = Color3.fromRGB(0, 210, 255) tLabel.Font = Enum.Font.Code tLabel.TextSize = 13 tLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- UI Dragging System
+local drag, dInp, dStart, sPos
+top.InputBegan:Connect(function(i) 
+    if i.UserInputType == Enum.UserInputType.MouseButton1 then 
+        drag, dStart, sPos = true, i.Position, g.Position 
+        i.Changed:Connect(function() if i.UserInputState == Enum.UserInputState.End then drag = false end end) 
+    end 
+end)
+top.InputChanged:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseMovement then dInp = i end end)
+game:GetService("RunService").RenderStepped:Connect(function() 
+    if drag and dInp then 
+        local delta = dInp.Position - dStart 
+        g.Position = UDim2.new(sPos.X.Scale, sPos.X.Offset + delta.X, sPos.Y.Scale, sPos.Y.Offset + delta.Y) 
+    end 
+end)
+
+-- Minimize/Close Actions
+local cb = Instance.new("TextButton", top) 
+cb.Size = UDim2.new(0, 20, 0, 20) cb.Position = UDim2.new(1, -26, 0, 5) cb.BackgroundColor3 = Color3.fromRGB(30, 15, 20) cb.Text = "×" cb.TextColor3 = Color3.fromRGB(255, 75, 75) cb.Font = Enum.Font.SourceSansBold cb.TextSize = 14 
+cb.MouseButton1Click:Connect(function() sg:Destroy() end) Instance.new("UICorner", cb).CornerRadius = UDim.new(0, 4)
+
+local mb = Instance.new("TextButton", top) 
+mb.Size = UDim2.new(0, 20, 0, 20) mb.Position = UDim2.new(1, -50, 0, 5) mb.BackgroundColor3 = Color3.fromRGB(20, 25, 30) mb.Text = "−" mb.TextColor3 = Color3.fromRGB(0, 210, 255) mb.Font = Enum.Font.SourceSansBold mb.TextSize = 14 Instance.new("UICorner", mb).CornerRadius = UDim.new(0, 4)
+
+local minimized = false 
+mb.MouseButton1Click:Connect(function() 
+    minimized = not minimized mb.Text = minimized and "+" or "−" 
+    T:Create(g, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = minimized and UDim2.new(0, 300, 0, 30) or UDim2.new(0, 300, 0, 250)}):Play() 
+end)
+
+local sbar = Instance.new("Frame", g) 
+sbar.Size = UDim2.new(0, 40, 1, -30) sbar.Position = UDim2.new(0, 0, 0, 30) sbar.BackgroundColor3 = Color3.fromRGB(11, 11, 14)
+
+local container = Instance.new("Frame", g) 
+container.Size = UDim2.new(1, -50, 1, -40) container.Position = UDim2.new(0, 45, 0, 35) container.BackgroundTransparency = 1
+
+-- Page Layout Setup
+local pages = {} 
+local function createPage(n) 
+    local pf = Instance.new("ScrollingFrame", container) pf.Size = UDim2.new(1, 0, 1, 0) pf.BackgroundTransparency = 1 pf.Visible = false pf.CanvasSize = UDim2.new(0, 0, 0, 250) pf.ScrollBarThickness = 0 pages[n] = pf return pf 
+end
+local homePage, playerPage, settingsPage = createPage("Home"), createPage("Player"), createPage("Settings")
+
+local hText = Instance.new("TextLabel", homePage) 
+hText.Size = UDim2.new(1, 0, 1, 0) hText.BackgroundTransparency = 1 hText.Text = "welcome to thebozz_v1 if any you have any problems please send me a msg on discord and i will be happy to help @thebozz_fr" hText.TextColor3 = Color3.fromRGB(180, 180, 180) hText.Font = Enum.Font.SourceSans hText.TextSize = 13 hText.TextWrapped = true
+
+local function switchTab(tName)
+    for pName, page in pairs(pages) do
+        if pName == tName then page.Visible = true
+            for _, c in ipairs(page:GetDescendants()) do if c:IsA("TextButton") or c:IsA("TextBox") then c.Active = true c.Visible = true end end
+        else page.Visible = false
+            for _, c in ipairs(page:GetDescendants()) do if c:IsA("TextButton") or c:IsA("TextBox") then c.Active = false c.Visible = false end end
+        end
+    end
+end
+
+local tabCount = 0
+local function addTab(icon, fullText, pName)
+    local b = Instance.new("TextButton", sbar) b.Size = UDim2.new(0, 30, 0, 30) b.Position = UDim2.new(0, 5, 0, 10 + (tabCount * 38)) b.BackgroundColor3 = Color3.fromRGB(20, 20, 25) b.Text = icon b.TextColor3 = Color3.fromRGB(200, 200, 200) b.Font = Enum.Font.SourceSansBold b.TextSize = 14 Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
+    local pop = Instance.new("TextLabel", b) pop.Size = UDim2.new(0, 0, 1, 0) pop.Position = UDim2.new(1, 8, 0, 0) pop.BackgroundColor3 = Color3.fromRGB(0, 210, 255) pop.Text = "  " .. fullText .. "  " pop.TextColor3 = Color3.fromRGB(15, 15, 18) pop.Font = Enum.Font.SourceSansBold pop.TextSize = 12 pop.ClipsDescendants = true pop.Visible = false Instance.new("UICorner", pop).CornerRadius = UDim.new(0, 4)
+    b.MouseEnter:Connect(function() pop.Visible = true T:Create(pop, TweenInfo.new(0.2), {Size = UDim2.new(0, 65, 1, 0)}):Play() end)
+    b.MouseLeave:Connect(function() T:Create(pop, TweenInfo.new(0.1), {Size = UDim2.new(0, 0, 1, 0)}):Play() task.wait(0.1) pop.Visible = false end)
+    b.MouseButton1Click:Connect(function() switchTab(pName) end) tabCount = tabCount + 1
+end
+addTab("H", "Home", "Home") addTab("P", "Player", "Player") addTab("S", "Settings", "Settings")
+
+-- Builders for Toggles and Values
+local function buildTog(parent, txt, curY, kRef)
+    local b = Instance.new("TextButton", parent) b.Size = UDim2.new(1, -10, 0, 26) b.Position = UDim2.new(0, 0, 0, curY) b.BackgroundColor3 = Color3.fromRGB(25, 25, 30) b.Text = txt .. ": OFF" b.TextColor3 = Color3.fromRGB(180, 180, 180) b.Font = Enum.Font.SourceSans b.TextSize = 13 Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
+    local function toggle()
+        _G.BFeat[kRef] = not _G.BFeat[kRef] local s = _G.BFeat[kRef]
+        b.BackgroundColor3 = s and Color3.fromRGB(0, 50, 70) or Color3.fromRGB(25, 25, 30)
+        b.TextColor3 = s and Color3.fromRGB(0, 210, 255) or Color3.fromRGB(180, 180, 180)
+        b.Text = txt .. (s and ": ON" or ": OFF")
+        if kRef == "fly" and not s then local c = p.Character if c then local r = c:FindFirstChild("HumanoidRootPart") if r then r.AssemblyLinearVelocity = Vector3.zero end end end
+        if kRef == "walk" and not s then local c = p.Character if c then local h = c:FindFirstChildOfClass("Humanoid") if h then h.WalkSpeed = 16 end end end
+    end
+    b.MouseButton1Click:Connect(toggle) _G.BTogs[kRef] = toggle return b
+end
+
+local function buildBox(parent, lbl, kRef, curY)
+    local l = Instance.new("TextLabel", parent) l.Size = UDim2.new(0, 90, 0, 26) l.Position = UDim2.new(0, 5, 0, curY) l.BackgroundTransparency = 1 l.Text = lbl l.TextColor3 = Color3.fromRGB(140, 140, 140) l.Font = Enum.Font.SourceSans l.TextSize = 13 l.TextXAlignment = Enum.TextXAlignment.Left
+    local box = Instance.new("TextBox", parent) box.Size = UDim2.new(1, -105, 0, 26) box.Position = UDim2.new(0, 95, 0, curY) box.BackgroundColor3 = Color3.fromRGB(20, 20, 25) box.Text = kRef == "fly" and tostring(_G.BFeat.flySpd) or tostring(_G.BFeat.wsVal) box.TextColor3 = Color3.fromRGB(0, 210, 255) box.Font = Enum.Font.SourceSansBold box.TextSize = 13 Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
+    box.FocusLost:Connect(function() local n = tonumber(box.Text) if n then if kRef == "fly" then _G.BFeat.flySpd = n else _G.BFeat.wsVal = n end else box.Text = kRef == "fly" and tostring(_G.BFeat.flySpd) or tostring(_G.BFeat.wsVal) end end)
+end
+
+-- Render Controls
+buildTog(playerPage, "Fly Engine", 0, "fly") 
+buildBox(playerPage, "└─ Fly Speed:", "fly", 30)
+buildTog(playerPage, "WalkSpeed Modifier", 60, "walk") 
+buildBox(playerPage, "└─ Ground Speed:", "walk", 90)
+buildTog(playerPage, "NoClip Environment", 120, "noclip")
+buildTog(playerPage, "Infinite Jump Engine", 150, "jump")
+
+-- Keybind Row Builder
+local function buildBindRow(actName, curY, kRef)
+    local l = Instance.new("TextLabel", settingsPage) l.Size = UDim2.new(0, 100, 0, 26) l.Position = UDim2.new(0, 5, 0, curY) l.BackgroundTransparency = 1 l.Text = "Bind " .. actName .. ":" l.TextColor3 = Color3.fromRGB(150, 150, 150) l.Font = Enum.Font.SourceSans l.TextSize = 13 l.TextXAlignment = Enum.TextXAlignment.Left
+    local b = Instance.new("TextButton", settingsPage) b.Size = UDim2.new(1, -115, 0, 26) b.Position = UDim2.new(0, 110, 0, curY) b.BackgroundColor3 = Color3.fromRGB(25, 25, 30) b.Text = "UNSET" b.TextColor3 = Color3.fromRGB(0, 210, 255) b.Font = Enum.Font.SourceSansBold b.TextSize = 12 Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
+    
+    b.MouseButton1Click:Connect(function() _G.BFeat.act = actName b.Text = "..." end)
+    
+    U.InputBegan:Connect(function(i, gpe) 
+        if gpe then return end 
+        if _G.BFeat.act == actName then 
+            if i.KeyCode ~= Enum.KeyCode.Unknown and i.KeyCode ~= Enum.KeyCode.Escape then 
+                _G.BBinds[actName] = i.KeyCode b.Text = i.KeyCode.Name _G.BFeat.act = nil 
+            end 
